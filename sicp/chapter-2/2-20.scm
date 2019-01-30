@@ -1,0 +1,11 @@
+(define (same-parity head . tail)
+  (define is-even (even? head))
+  (define is-odd (odd? head))
+  (define (filter ls result)
+    (if (null? ls)
+        result
+	(let ((a (car ls)))
+	  (filter (cdr ls) (if (or (and is-even (even? a)) (and is-odd (odd? a)))
+			       (append result (list a))
+                	       result)))))
+  (filter tail (list head)))

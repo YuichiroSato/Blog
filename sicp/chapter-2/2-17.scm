@@ -1,0 +1,6 @@
+(define (last-pair ls)
+  (let ((head (car ls))
+        (tail (cdr ls)))
+    (if (null? tail)
+        (list head)
+	(last-pair tail))))

@@ -1,0 +1,16 @@
+(define (unique-pairs n)
+  (define (iter is result)
+    (if (null? is)
+        result
+	(let ((a (car is)))
+	     (iter (cdr is) (append result (map (lambda (i) (cons a i)) is))))))
+  (if (< n 0)
+      ()
+      (iter (one-to-n n) ())))
+
+(define (one-to-n n)
+  (define (iter i result)
+    (if (> i n)
+        (reverse result)
+	(iter (+ i 1) (cons i result))))
+  (iter 1 n))
