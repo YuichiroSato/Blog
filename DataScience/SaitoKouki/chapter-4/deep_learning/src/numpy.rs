@@ -80,34 +80,31 @@ impl NumpyArray {
         arr
     }
 
-    pub fn adds(&self, val: f32) -> Self {
-        let mut arr = NumpyArray::new(self.row, self.column);
+    pub fn adds(&mut self, val: f32) -> &mut NumpyArray {
         for r in 0..self.row {
             for c in 0..self.column {
-                arr.data[r][c] = self.data[r][c] + val;
+                self.data[r][c] += val;
             }
         }
-        arr
+        self
     }
 
-    pub fn muls(&self, val: f32) -> Self {
-        let mut arr = NumpyArray::new(self.row, self.column);
+    pub fn muls(&mut self, val: f32) -> &mut NumpyArray {
         for r in 0..self.row {
             for c in 0..self.column {
-                arr.data[r][c] = self.data[r][c] * val;
+                self.data[r][c] *= val;
             }
         }
-        arr
+        self
     }
 
-    pub fn map(&self, f: &Fn(f32) -> f32) -> Self {
-        let mut arr = NumpyArray::new(self.row, self.column);
+    pub fn map(&mut self, f: &Fn(f32) -> f32) -> &mut NumpyArray {
         for r in 0..self.row {
             for c in 0..self.column {
-                arr.data[r][c] = (*f)(self.data[r][c]);
+                self.data[r][c] = (*f)(self.data[r][c]);
             }
         }
-        arr
+        self
     }
 
     pub fn max(&self) -> f32 {
@@ -131,36 +128,30 @@ impl NumpyArray {
     }
 }
 
-pub fn add(a1: &NumpyArray, a2: &NumpyArray) -> NumpyArray {
+pub fn add<'a>(a1: &'a mut NumpyArray, a2: &NumpyArray) -> &'a mut NumpyArray {
     if a1.row != a2.row || a1.column != a2.column {
         panic!("matrix dimension error: ({}, {}) + ({}, {}) is not defined", a1.row, a1.column, a2.row, a2.column);
     }
 
-    let mut arr = NumpyArray::new(a1.row, a2.column);
-
     for c in 0..a1.column {
         for r in 0..a1.row {
-            arr.data[r][c] = a1.data[r][c] + a2.data[r][c];
+            a1.data[r][c] += a2.data[r][c];
         }
     }
-
-    arr
+    a1
 }
 
-pub fn sub(a1: &NumpyArray, a2: &NumpyArray) -> NumpyArray {
+pub fn sub<'a>(a1: &'a mut NumpyArray, a2: &NumpyArray) -> &'a mut NumpyArray {
     if a1.row != a2.row || a1.column != a2.column {
         panic!("matrix dimension error: ({}, {}) - ({}, {}) is not defined", a1.row, a1.column, a2.row, a2.column);
     }
 
-    let mut arr = NumpyArray::new(a1.row, a2.column);
-
     for c in 0..a1.column {
         for r in 0..a1.row {
-            arr.data[r][c] = a1.data[r][c] - a2.data[r][c];
+            a1.data[r][c] -= a2.data[r][c];
         }
     }
-
-    arr
+    a1
 }
 
 pub fn dot(a1: &NumpyArray, a2: &NumpyArray) -> NumpyArray {
@@ -208,42 +199,39 @@ impl NumpyVector {
         NumpyArray::column_vec(&self.data.to_vec())
     }
 
-    pub fn addv(&self, a: &NumpyVector) -> Self {
+    pub fn addv(&mut self, a: &NumpyVector) -> &mut NumpyVector {
       if self.data.len() != a.data.len() {
         panic!("vector dimension error: [{}] + [{}] is not defined", self.data.len(), a.data.len());
       }
-      let mut x = NumpyVector::new(self.data.len());
+
       for i in 0..self.data.len() {
-        x.data[i] = self.data[i] + a.data[i];
+        self.data[i] += a.data[i];
       }
-      x
+      self
     }
 
-    pub fn subv(&self, a: &NumpyVector) -> Self {
+    pub fn subv(&mut self, a: &NumpyVector) -> &mut NumpyVector {
       if self.data.len() != a.data.len() {
         panic!("vector dimension error: [{}] - [{}] is not defined", self.data.len(), a.data.len());
       }
-      let mut x = NumpyVector::new(self.data.len());
       for i in 0..self.data.len() {
-        x.data[i] = self.data[i] - a.data[i];
+        self.data[i] -= a.data[i];
       }
-      x
+      self
     }
 
-    pub fn muls(&self, v: f32) -> Self {
-      let mut x = NumpyVector::new(self.data.len());
+    pub fn muls(&mut self, v: f32) -> &mut NumpyVector {
       for i in 0..self.data.len() {
-        x.data[i] = v * self.data[i];
+        self.data[i] *= v;
       }
-      x
+      self
     }
 
-    pub fn map(&self, f: &Fn(f32) -> f32) -> Self {
-        let mut v = NumpyVector::new(self.data.len());
+    pub fn map(&mut self, f: &Fn(f32) -> f32) -> &mut NumpyVector {
         for i in 0..self.data.len() {
-            v.data[i] = (*f)(self.data[i]);
+            self.data[i] = (*f)(self.data[i]);
         }
-        v
+        self
     }
 
     pub fn max(&self) -> f32 {
@@ -338,7 +326,7 @@ fn transpose_test() {
 
 #[test]
 fn adds_test() {
-    let a = NumpyArray::new(2, 3);
+    let mut a = NumpyArray::new(2, 3);
     let result = a.adds(2.0);
 
     assert_eq!(result.data, vec![vec![2.0, 2.0, 2.0], vec![2.0, 2.0, 2.0]]);
@@ -346,7 +334,7 @@ fn adds_test() {
 
 #[test]
 fn muls_test() {
-    let a = NumpyArray::new(2, 3);
+    let mut a = NumpyArray::new(2, 3);
     let result = a.adds(2.0).muls(2.0);
 
     assert_eq!(result.data, vec![vec![4.0, 4.0, 4.0], vec![4.0, 4.0, 4.0]]);
@@ -354,7 +342,7 @@ fn muls_test() {
 
 #[test]
 fn map_test() {
-    let a = NumpyArray::new(2, 3);
+    let mut a = NumpyArray::new(2, 3);
     let result = a.map(&|x| { x + 2.0});
 
     assert_eq!(result.data, vec![vec![2.0, 2.0, 2.0], vec![2.0, 2.0, 2.0]]);
@@ -374,18 +362,18 @@ fn sum_test() {
 
 #[test]
 fn add_test() {
-    let a = NumpyArray::from_vec(&vec![vec![1.0, 2.0, 3.0], vec![4.0, 5.0, 6.0]]);
+    let mut a = NumpyArray::from_vec(&vec![vec![1.0, 2.0, 3.0], vec![4.0, 5.0, 6.0]]);
     let b = NumpyArray::from_vec(&vec![vec![3.0, 2.0, 1.0], vec![6.0, 5.0, 4.0]]);
-    let result = add(&a, &b);
+    let result = add(&mut a, &b);
 
     assert_eq!(result.data, vec![vec![4.0, 4.0, 4.0], vec![10.0, 10.0, 10.0]]);
 }
 
 #[test]
 fn sub_test() {
-    let a = NumpyArray::from_vec(&vec![vec![1.0, 2.0, 3.0], vec![4.0, 5.0, 6.0]]);
+    let mut a = NumpyArray::from_vec(&vec![vec![1.0, 2.0, 3.0], vec![4.0, 5.0, 6.0]]);
     let b = NumpyArray::from_vec(&vec![vec![3.0, 2.0, 1.0], vec![6.0, 5.0, 4.0]]);
-    let result = sub(&a, &b);
+    let result = sub(&mut a, &b);
 
     assert_eq!(result.data, vec![vec![-2.0, 0.0, 2.0], vec![-2.0, 0.0, 2.0]]);
 }
@@ -456,7 +444,7 @@ fn vector_to_column_test() {
 
 #[test]
 fn vector_addv_test() {
-    let v1 = NumpyVector::from_vec(&vec![1.0, 2.0, 3.0]);
+    let mut v1 = NumpyVector::from_vec(&vec![1.0, 2.0, 3.0]);
     let v2 = NumpyVector::from_vec(&vec![1.0, 1.0, 0.0]);
     let result = v1.addv(&v2);
     assert_eq!(result.data, vec![2.0, 3.0, 3.0]);
@@ -464,7 +452,7 @@ fn vector_addv_test() {
 
 #[test]
 fn vector_subv_test() {
-    let v1 = NumpyVector::from_vec(&vec![1.0, 2.0, 3.0]);
+    let mut v1 = NumpyVector::from_vec(&vec![1.0, 2.0, 3.0]);
     let v2 = NumpyVector::from_vec(&vec![1.0, 1.0, 0.0]);
     let result = v1.subv(&v2);
     assert_eq!(result.data, vec![0.0, 1.0, 3.0]);
@@ -472,14 +460,14 @@ fn vector_subv_test() {
 
 #[test]
 fn vector_muls_test() {
-    let v1 = NumpyVector::from_vec(&vec![1.0, 2.0, 3.0]);
+    let mut v1 = NumpyVector::from_vec(&vec![1.0, 2.0, 3.0]);
     let result = v1.muls(2.0);
     assert_eq!(result.data, vec![2.0, 4.0, 6.0]);
 }
 
 #[test]
 fn vector_map_test() {
-    let a = NumpyVector::new(3);
+    let mut a = NumpyVector::new(3);
     let result = a.map(&|x| { x + 2.0});
 
     assert_eq!(result.data, vec![2.0, 2.0, 2.0]);

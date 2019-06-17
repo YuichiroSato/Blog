@@ -18,9 +18,9 @@ impl SimpleNet {
     }
 
     pub fn loss(&self, x: &NumpyVector, t: &NumpyVector) -> f32 {
-        let z = self.predict(&x);
-        let y = softmax(&z);
-        cross_entropy_error(&y, &t)
+        let mut z = self.predict(&x);
+        let mut y = softmax(&mut z);
+        cross_entropy_error(&mut y, &t)
     }
 }
 

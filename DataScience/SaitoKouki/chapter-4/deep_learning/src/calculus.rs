@@ -5,51 +5,68 @@ pub fn numerical_diff(f: &Fn(f32) -> f32, x: f32) -> f32 {
     (f(x + 0.0001) - f(x - 0.0001)) / 0.0002
 }
 
-pub fn numerical_grad(f: &Fn(NumpyVector) -> f32, x: &NumpyVector) -> NumpyVector {
+pub fn numerical_grad(f: &Fn(&NumpyVector) -> f32, x: &mut NumpyVector) -> NumpyVector {
     let mut grad = NumpyVector::new(x.data.len());
-    let mut tmp_data = x.data.clone();
 
     for i in 0..x.data.len() {
-        let tmp_val = tmp_data[i];
+        let tmp_val = x.data[i];
 
-        tmp_data[i] = tmp_val + 0.0001;
-        let fx1 = f(NumpyVector::from_vec(&tmp_data));
-        tmp_data[i] = tmp_val - 0.0001;
-        let fx2 = f(NumpyVector::from_vec(&tmp_data));
+        x.data[i] = tmp_val + 0.0001;
+        let fx1 = f(&x);
+        x.data[i] = tmp_val - 0.0001;
+        let fx2 = f(&x);
 
         grad.data[i] = (fx1 - fx2) / 0.0002;
 
-        tmp_data[i] = tmp_val;
+        x.data[i] = tmp_val;
     }
     grad
 }
 
-pub fn numerical_grad_array(f: &Fn(NumpyArray) -> f32, x: &NumpyArray) -> NumpyArray {
+pub fn numerical_grad_array(f: &Fn(&NumpyArray) -> f32, x: &mut NumpyArray) -> NumpyArray {
     let mut grad = NumpyArray::new(x.row, x.column);
-    let mut tmp_data = x.data.clone();
 
     for r in 0..x.row {
         for c in 0..x.column {
-            let tmp_val = tmp_data[r][c];
+            let tmp_val = x.data[r][c];
 
-            tmp_data[r][c] = tmp_val + 0.0001;
-            let fx1 = f(NumpyArray::from_vec(&tmp_data));
-            tmp_data[r][c] = tmp_val - 0.0001;
-            let fx2 = f(NumpyArray::from_vec(&tmp_data));
+            x.data[r][c] = tmp_val + 0.0001;
+            let fx1 = f(&x);
+            x.data[r][c] = tmp_val - 0.0001;
+            let fx2 = f(&x);
 
             grad.data[r][c] = (fx1 - fx2) / 0.0002;
 
-            tmp_data[r][c] = tmp_val;
+            x.data[r][c] = tmp_val;
         }
     }
     grad
 }
 
-pub fn gradient_descent(f: &Fn(NumpyVector) -> f32, init_x: &NumpyVector, lr: f32, step: usize) -> NumpyVector {
-    let mut x = NumpyVector::from_vec(&init_x.data.clone());
+pub fn numerical_grad_box(f: &Fn(Box<NumpyArray>) -> f32, x: &mut Box<NumpyArray>) -> NumpyArray {
+    let mut grad = NumpyArray::new(x.row, x.column);
+
+    for r in 0..x.row {
+        for c in 0..x.column {
+            let tmp_val = (*x).data[r][c];
+
+            (*x).data[r][c] = tmp_val + 0.0001;
+            let fx1 = f(x.clone());
+            (*x).data[r][c] = tmp_val - 0.0001;
+            let fx2 = f(x.clone());
+
+            grad.data[r][c] = (fx1 - fx2) / 0.0002;
+
+            x.data[r][c] = tmp_val;
+        }
+    }
+    grad
+}
+
+pub fn gradient_descent<'a>(f: &Fn(&NumpyVector) -> f32, x: &'a mut NumpyVector, lr: f32, step: usize) -> &'a NumpyVector {
     for _ in 0..step {
-        let grad = numerical_grad(f, &x);
-        x = x.subv(&grad.muls(lr));
+        //let a = numerical_grad(f, x).muls(lr);
+        //x = x.subv(a);
     }
     x
 }
@@ -62,16 +79,16 @@ fn numerical_diff_test() {
 
 #[test]
 fn numerical_grad_test() {
-    let result = numerical_grad(&|x: NumpyVector| x.data[0] * x.data[0] + x.data[1] * x.data[1], &NumpyArray::row_vec(&vec![3.0, 4.0]).to_vector());
+    let result = numerical_grad(&|x: &NumpyVector| x.data[0] * x.data[0] + x.data[1] * x.data[1], &mut NumpyArray::row_vec(&vec![3.0, 4.0]).to_vector());
     assert!(result.data[0] > 5.98 && result.data[0] < 6.01);
     assert!(result.data[1] > 7.99 && result.data[1] < 8.01);
 }
 
 #[test]
 fn gradient_descent_test() {
-    let f = |x: NumpyVector| x.data[0] * x.data[0] + x.data[1] * x.data[1];
-    let init = NumpyArray::row_vec(&vec![-3.0, 4.0]).to_vector();
-    let result = gradient_descent(&f, &init, 0.1, 100);
+    let f = |x: &NumpyVector| x.data[0] * x.data[0] + x.data[1] * x.data[1];
+    let mut init = NumpyArray::row_vec(&vec![-3.0, 4.0]).to_vector();
+    let result = gradient_descent(&f, &mut init, 0.1, 100);
     assert!(result.data[0] > -0.001 && result.data[0] < 0.001);
     assert!(result.data[1] > -0.001 && result.data[1] < 0.001);
 }

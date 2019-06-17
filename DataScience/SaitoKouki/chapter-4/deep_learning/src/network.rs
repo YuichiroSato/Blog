@@ -6,48 +6,58 @@ use crate::numpy::*;
 use rand::prelude::*;
 
 pub struct Network {
-    pub w1: NumpyArray,
-    pub w2: NumpyArray,
-    pub b1: NumpyArray,
-    pub b2: NumpyArray,
+    pub w1: Box<NumpyArray>,
+    pub w2: Box<NumpyArray>,
+    pub b1: Box<NumpyArray>,
+    pub b2: Box<NumpyArray>,
 }
 
 impl Network {
-    pub fn new(input_size: usize, hidden_size: usize, output_size: usize, weight_init_std: f32) -> Self {
+    pub fn new(input_size: usize, hidden_size: usize, output_size: usize, weight_init_std: f32) -> Network {
         let mut r = rand::thread_rng();
 
         let a1: Vec<Vec<f32>> = (0..input_size).map(|_| {
             (0..hidden_size).map(|_| {
-                r.gen()
+                let i: f32 = r.gen();
+                weight_init_std * (i * 2.0 - 1.0)
             }).collect()
         }).collect();
         let a2: Vec<Vec<f32>> = (0..hidden_size).map(|_| {
             (0..output_size).map(|_| {
-                r.gen()
+                let i: f32 = r.gen();
+                weight_init_std * (i * 2.0 - 1.0)
             }).collect()
         }).collect();
         Network {
-            w1: NumpyArray::from_vec(&a1).muls(2.0).adds(-1.0).muls(weight_init_std),
-            w2: NumpyArray::from_vec(&a2).muls(2.0).adds(-1.0).muls(weight_init_std),
-            b1: NumpyArray::row_vec(&vec![0.0; hidden_size]),
-            b2: NumpyArray::row_vec(&vec![0.0; output_size]),
+            w1: Box::new(NumpyArray::from_vec(&a1)),
+            w2: Box::new(NumpyArray::from_vec(&a2)),
+            b1: Box::new(NumpyArray::row_vec(&vec![0.0; hidden_size])),
+            b2: Box::new(NumpyArray::row_vec(&vec![0.0; output_size])),
         }
     }
 
     pub fn predict(&self, input: &NumpyVector) -> NumpyVector {
-        let a1 = numpy::add(&numpy::dot(&input.to_row(), &self.w1), &self.b1);
-        let z1 = layer::sigmoid(&a1.to_vector());
-        let a2 = numpy::add(&numpy::dot(&z1.to_row(), &self.w2), &self.b2);
-        layer::softmax(&a2.to_vector())
+        let mut row = input.to_row();
+        let mut aa = numpy::dot(&mut row, &self.w1);
+        let mut a1 = numpy::add(&mut aa, &self.b1).to_vector();
+        let mut z1 = layer::sigmoid(&mut a1).to_row();
+        let mut bb = numpy::dot(&mut z1, &self.w2);
+        let mut a2 = numpy::add(&mut bb, &self.b2).to_vector();
+        layer::softmax(&mut a2);
+        a2
     }
 
     pub fn loss(&self, x: &NumpyVector, t: &NumpyVector) -> f32 {
-        let y = self.predict(&x);
-        cross_entropy_error(&y, &t)
+        let mut y = self.predict(&x);
+        cross_entropy_error(&mut y, &t)
     }
 
-    pub fn gradient(&self, x: &NumpyVector, t: &NumpyVector) -> Network {
-        let gw1 = numerical_grad_array(&|w| {
+    pub fn gradient(&mut self, x: &NumpyVector, t: &NumpyVector) -> Network {
+        let mut a1 = self.w1.clone();
+        let mut a2 = self.w2.clone();
+        let mut a3 = self.b1.clone();
+        let mut a4 = self.b2.clone();
+        let gw1 = numerical_grad_box(&|w: Box<NumpyArray>| {
             let tmp_network = Network {
                 w1: w,
                 w2: self.w2.clone(),
@@ -55,8 +65,8 @@ impl Network {
                 b2: self.b2.clone(),
             };
             tmp_network.loss(&x, &t) 
-        }, &self.w1);
-        let gw2 = numerical_grad_array(&|w| {
+        }, &mut a1);
+        let gw2 = numerical_grad_box(&|w: Box<NumpyArray>| {
             let tmp_network = Network {
                 w1: self.w1.clone(),
                 w2: w,
@@ -64,8 +74,8 @@ impl Network {
                 b2: self.b2.clone(),
             };
             tmp_network.loss(&x, &t)
-        }, &self.w2);
-        let gb1 = numerical_grad_array(&|b| {
+        }, &mut a2);
+        let gb1 = numerical_grad_box(&|b: Box<NumpyArray>| {
             let tmp_network = Network {
                 w1: self.w1.clone(),
                 w2: self.w2.clone(),
@@ -73,8 +83,8 @@ impl Network {
                 b2: self.b2.clone(),
             };
             tmp_network.loss(&x, &t)
-        }, &self.b1);
-        let gb2 = numerical_grad_array(&|b| {
+        }, &mut a3);
+        let gb2 = numerical_grad_box(&|b: Box<NumpyArray>| {
             let tmp_network = Network {
                 w1: self.w1.clone(),
                 w2: self.w2.clone(),
@@ -82,12 +92,12 @@ impl Network {
                 b2: b,
             };
             tmp_network.loss(&x, &t)
-        }, &self.b2);
+        }, &mut a4);
         Network {
-            w1: gw1,
-            w2: gw2,
-            b1: gb1,
-            b2: gb2,
+            w1: Box::new(gw1),
+            w2: Box::new(gw2),
+            b1: Box::new(gb1),
+            b2: Box::new(gb2),
         }
     }
 }
@@ -101,7 +111,7 @@ fn predict_test() {
 
 #[test]
 fn gradient_test() {
-    let network = Network::new(2, 3, 2, 0.01);
+    let mut network = Network::new(2, 3, 2, 0.01);
     let x = NumpyVector::from_vec(&vec![1.0, 0.2]);
     let t = NumpyVector::from_vec(&vec![0.0, 1.0]);
     let result = network.gradient(&x, &t);

@@ -19,11 +19,15 @@ fn main() {
     for i in 0..train_images.len() {
         let x = train_images[i].flatten();
         let t = endode_train_vec(train_labels[i]);
-        let grad = network.gradient(&x, &t);
-        network.w1 = numpy::add(&network.w1, &grad.w1.muls(-0.01));
-        network.w2 = numpy::add(&network.w2, &grad.w2.muls(-0.01));
-        network.b1 = numpy::add(&network.b1, &grad.b1.muls(-0.01));
-        network.b2 = numpy::add(&network.b2, &grad.b2.muls(-0.01));
+        let mut grad = network.gradient(&x, &t);
+        let a1 = numpy::add(&mut network.w1, &(*grad.w1).muls(-0.01));
+        let a2 = numpy::add(&mut network.w2, &(*grad.w2).muls(-0.01));
+        let a3 = numpy::add(&mut network.b1, &(*grad.b1).muls(-0.01));
+        let a4 = numpy::add(&mut network.b2, &(*grad.b2).muls(-0.01));
+      //network.w1 = Box::new(*a1);
+      //network.w2 = Box::new(*a2);
+      //network.b1 = Box::new(*a3);
+      //network.b2 = Box::new(*a4);
 
         println!("{}", network.loss(&x, &t));
     }
