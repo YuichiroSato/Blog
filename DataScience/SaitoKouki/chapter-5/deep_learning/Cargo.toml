@@ -1,0 +1,12 @@
+[package]
+name = "deep_learning"
+version = "0.1.0"
+authors = ["YuichiroSato <sato.yu1ro@gmail.com>"]
+edition = "2018"
+
+[[bin]]
+name = "deep_learning"
+path = "src/main.rs"
+
+[dependencies]
+rand = { version = "0.6", features = ["wasm-bindgen"] }
