@@ -82,3 +82,34 @@ impl AdaGrad {
         }
     }
 }
+
+pub struct RMSprop {
+    lr: f32,
+    decay: f32,
+    buf_x: f32,
+    buf_y: f32,
+}
+
+impl Optimizer for RMSprop {
+    fn optimize(&mut self, x: f32, y: f32) -> (f32, f32) {
+        let (dx, dy) = grad(x, y);
+        self.buf_x *= self.decay;
+        self.buf_y *= self.decay;
+        self.buf_x += (1.0 - self.decay) * dx * dx;
+        self.buf_y += (1.0 - self.decay) * dy * dy;
+        let _dx = self.lr * dx / (self.buf_x.sqrt() + 0.00001);
+        let _dy = self.lr * dy / (self.buf_y.sqrt() + 0.00001);
+        (x - _dx, y - _dy)
+    }
+}
+
+impl RMSprop {
+    pub fn new(lr: f32, decay: f32) -> Self {
+        RMSprop {
+            lr: lr,
+            decay: decay,
+            buf_x: 0.0,
+            buf_y: 0.0,
+        }
+    }
+}
