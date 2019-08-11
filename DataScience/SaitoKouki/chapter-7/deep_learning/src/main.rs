@@ -1,6 +1,7 @@
 extern crate rand;
 
 mod calculus;
+mod optimizer;
 mod layer;
 mod mnist;
 mod network;
@@ -31,41 +32,17 @@ fn main() {
     let mut r = rand::thread_rng();
 
     println!("learning start");
-    for n in 0..10009 {
+    for n in 0..500 {
         let rs: Vec<f32> = (0..100).map(|_| r.gen() ).collect();
         let is: Vec<usize> = rs.iter().map(|&i| (i * train_size) as usize).collect();
-
-        let mut dw1 = vec![NumpyVector::new(25); 30];
-        let mut db1 = vec![0.0; 30];
-        let mut dw2 = NumpyArray::new(4320, 100);
-        let mut db2 = NumpyVector::new(100);
-        let mut dw3 = NumpyArray::new(100, 10);
-        let mut db3 = NumpyVector::new(10);
 
         for j in 0..100 {
             let x = &normalized_train_images[is[j]];
             let t = &encoded_train_labels[is[j]];
-            let ((_dw1, _db1), (_dw2, _db2), (_dw3, _db3)) = network.gradient(&x, &t);
-            for i in 0..30 {
-                dw1[i] = dw1[i].addv(&_dw1[i]);
-                db1[i] = db1[i] + _db1[i];
-            }
-            dw2 = numpy::add(&dw2, &_dw2);
-            db2 = db2.addv(&_db2);
-            dw3 = numpy::add(&dw3, &_dw3);
-            db3 = db3.addv(&_db3);
+            network.gradient(&x, &t);
         }
 
-        let filter_w = network.layer1.get_dw();
-        for i in 0..30 {
-            network.layer1.bias[i] = network.layer1.bias[i] + db1[i] * (-0.001);
-            dw1[i] = filter_w[i].addv(&dw1[i].muls(-0.001));
-        }
-        network.layer1.set_dw(&dw1);
-        network.layer5.w = numpy::add(&network.layer5.w, &dw2.muls(-0.001));
-        network.layer7.w = numpy::add(&network.layer7.w, &dw3.muls(-0.001));
-        network.layer5.b = network.layer5.b.addv(&db2.muls(-0.001));
-        network.layer7.b = network.layer7.b.addv(&db3.muls(-0.001));
+        network.update();
 
         let mut acc = 0;
         for i in is {

@@ -1,4 +1,4 @@
-use crate::calculus::*;
+use crate::optimizer::*;
 use crate::numpy;
 use crate::numpy::*;
 
@@ -47,6 +47,7 @@ pub fn cross_entropy_error_batch(inputs: &Vec<NumpyVector>, trains: &Vec<NumpyVe
 pub trait Layer {
     fn forward(&mut self, x: &NumpyVector) -> NumpyVector;
     fn backward(&mut self, x: &NumpyVector) -> NumpyVector;
+    fn update(&mut self);
 }
 
 pub struct ReluLayer {
@@ -71,6 +72,8 @@ impl Layer for ReluLayer {
         }
         dx
     }
+
+    fn update(&mut self) {}
 }
 
 impl ReluLayer {
@@ -95,6 +98,8 @@ impl Layer for SigmoidLayer {
         let one = NumpyVector::from_vec(&vec![1.0; x.data.len()]);
         self.out.muls(numpy::norm(&self.out, &one.subv(&x)))
     }
+
+    fn update(&mut self) {}
 }
 
 impl SigmoidLayer {
@@ -108,9 +113,11 @@ impl SigmoidLayer {
 pub struct AffineLayer {
     pub w: NumpyArray,
     pub b: NumpyVector,
-    pub dw: NumpyArray,
-    pub db: NumpyVector,
+    dw: NumpyArray,
+    db: NumpyVector,
     x: NumpyVector,
+    w_optimizer: ArrayRMSprop,
+    b_optimizer: VectorRMSprop,
 }
 
 impl Layer for AffineLayer {
@@ -121,20 +128,34 @@ impl Layer for AffineLayer {
 
     fn backward(&mut self, x: &NumpyVector) -> NumpyVector {
         let dx = numpy::dot(&x.to_row(), &self.w.transpose()).to_vector();
-        self.dw = numpy::dot(&self.x.to_column(), &x.to_row());
-        self.db = x.clone();
+        let dw = numpy::dot(&self.x.to_column(), &x.to_row());
+        let db = x.clone();
+        self.dw = numpy::add(&dw, &self.dw);
+        self.db = db.addv(&self.db);
         dx
+    }
+
+    fn update(&mut self) {
+        self.w = self.w_optimizer.optimize(&self.w, &self.dw);
+        self.b = self.b_optimizer.optimize(&self.b, &self.db);
+        self.dw.zeros();
+        self.db.zeros();
     }
 }
 
 impl AffineLayer {
     pub fn new(w: NumpyArray, b: NumpyVector) -> Self {
+        let r = w.row.clone();
+        let c = w.column.clone();
+        let l = b.data.len();
         AffineLayer {
             w: w,
             b: b,
-            dw: NumpyArray::new(0, 0),
-            db: NumpyVector::new(0),
+            dw: NumpyArray::new(r, c),
+            db: NumpyVector::new(l),
             x: NumpyVector::new(0),
+            w_optimizer: ArrayRMSprop::new(0.001, 0.99, r, c),
+            b_optimizer: VectorRMSprop::new(0.001, 0.99, l),
         }
     }
 }
@@ -173,6 +194,7 @@ impl SoftmaxWithLossLayer {
 pub trait CnnLayer {
     fn forward(&mut self, x: &Vec<NumpyArray>) -> Vec<NumpyArray>;
     fn backward(&mut self, x: &Vec<NumpyArray>) -> Vec<NumpyArray>;
+    fn update(&mut self);
 }
 
 pub struct Filter {
@@ -188,18 +210,21 @@ pub struct Filter {
     pub out_column_size: usize,
     col: NumpyArray,
     x: Vec<NumpyArray>,
-    pub dw: NumpyVector,
+    dw: NumpyVector,
+    w_optimizer: VectorRMSprop,
 }
 
 impl Filter {
     pub fn new(w: &mut Vec<NumpyArray>, padding: usize, slide: usize, input_row_size: usize, input_column_size: usize) -> Self {
         let row_size = w[0].row;
         let column_size = w[0].column;
+        let flatten_w = Filter::flatten(w);
+        let flatten_w_len = flatten_w.data.len();
         Filter {
             channel: w.len(),
             row_size: row_size,
             column_size: column_size,
-            w: Filter::flatten(w),
+            w: flatten_w,
             padding: padding,
             slide: slide,
             input_row_size: input_row_size,
@@ -208,7 +233,8 @@ impl Filter {
             out_column_size: 1 + ((input_column_size + 2 * padding - column_size) as f32 / slide as f32) as usize,
             col: NumpyArray::new(0, 0),
             x: Vec::new(),
-            dw: NumpyVector::new(0),
+            dw: NumpyVector::new(flatten_w_len),
+            w_optimizer: VectorRMSprop::new(0.001, 0.99, flatten_w_len),
         }
     }
 
@@ -255,9 +281,15 @@ impl Filter {
 
     pub fn backward(&mut self, x: &NumpyArray) -> Vec<NumpyArray> {
         let flat_x = Filter::flatten(&mut vec![x.clone()]);
-        self.dw = numpy::dot(&flat_x.to_row(), &self.col).to_vector();
+        let dw = numpy::dot(&flat_x.to_row(), &self.col).to_vector();
+        self.dw = dw.addv(&self.dw);
         //TODO
         vec![NumpyArray::new(self.input_row_size, self.input_column_size); self.channel]
+    }
+
+    pub fn update(&mut self) {
+        self.w = self.w_optimizer.optimize(&self.w, &self.dw);
+        self.dw.zeros();
     }
 }
 
@@ -306,7 +338,8 @@ pub struct ConvolutionLayer {
     input_row_size: usize,
     input_column_size: usize,
     buf_x: Vec<NumpyArray>,
-    pub db: Vec<f32>,
+    db: Vec<f32>,
+    bias_optimizer: VecRMSprop,
 }
 
 impl CnnLayer for ConvolutionLayer {
@@ -334,8 +367,20 @@ impl CnnLayer for ConvolutionLayer {
             }
             db2.push(x[i].sum());
         }
-        self.db = db2;
+        for i in 0..db2.len() {
+            self.db[i] += db2[i];
+        }
         dout
+    }
+
+    fn update(&mut self) {
+        for i in 0..self.filters.len() {
+            self.filters[i].update();
+        }
+        self.bias = self.bias_optimizer.optimize(&self.bias, &self.db);
+        for i in 0..self.db.len() {
+            self.db[i] = 0.0;
+        }
     }
 }
 
@@ -347,6 +392,7 @@ impl ConvolutionLayer {
             }
         }
 
+        let filters_len = filters.len();
         ConvolutionLayer {
             channel: channel,
             filters: filters,
@@ -354,17 +400,8 @@ impl ConvolutionLayer {
             input_row_size: input_row_size,
             input_column_size: input_column_size,
             buf_x: vec![NumpyArray::new(0, 0)],
-            db: Vec::new(),
-        }
-    }
-
-    pub fn get_dw(&self) -> Vec<NumpyVector> {
-        self.filters.iter().map(|f| { f.dw.clone() }).collect()
-    }
-
-    pub fn set_dw(&mut self, dw: &Vec<NumpyVector>) {
-        for i in 0..self.filters.len() {
-            self.filters[i].dw = dw[i].clone();
+            db: vec![0.0; filters_len],
+            bias_optimizer: VecRMSprop::new(0.001, 0.99, filters_len),
         }
     }
 }
@@ -401,9 +438,10 @@ fn convolution_backward_test() {
 
     let d1 = NumpyArray::from_vec(&vec![vec![1.0, 2.0], vec![3.0, 4.0]]);
     let d2 = NumpyArray::from_vec(&vec![vec![5.0, 6.0], vec![7.0, 8.0]]);
-    let result = l.backward(&vec![d1, d2]);
-    println!("{:?}", result[0].data);
-    println!("{:?}", l.filters[0].dw);
+    l.backward(&vec![d1, d2]);
+    println!("{:?}", l.filters[0].w);
+    l.update();
+    println!("{:?}", l.filters[0].w);
     assert!(false);
 }
 
@@ -437,6 +475,8 @@ impl CnnLayer for CnnReluLayer {
         }
         dx_vec
     }
+
+    fn update(&mut self) {}
 }
 
 impl CnnReluLayer {
@@ -498,6 +538,8 @@ impl CnnLayer for MaxPoolingLayer {
 
         back
     }
+
+    fn update(&mut self) {}
 }
 
 impl MaxPoolingLayer {

@@ -74,7 +74,7 @@ impl Network {
         self.last_layer.forward(&y, &t)
     }
 
-    pub fn gradient(&mut self, x: &NumpyArray, t: &NumpyVector) -> ((Vec<NumpyVector>, Vec<f32>), (NumpyArray, NumpyVector), (NumpyArray, NumpyVector)) {
+    pub fn gradient(&mut self, x: &NumpyArray, t: &NumpyVector) {
         let _ = self.loss(x, t);
         let mut dout = NumpyVector::new(0);
         dout = self.last_layer.backward(&dout);
@@ -85,22 +85,28 @@ impl Network {
         douta = self.layer3.backward(&douta);
         douta = self.layer2.backward(&douta);
         self.layer1.backward(&douta);
-        ((self.layer1.get_dw(), self.layer1.db.clone()),
-         (self.layer5.dw.clone(), self.layer5.db.clone()),
-        (self.layer7.dw.clone(), self.layer7.db.clone()))
+    }
+
+    pub fn update(&mut self) {
+        self.layer1.update();
+        self.layer2.update();
+        self.layer3.update();
+        self.layer5.update();
+        self.layer6.update();
+        self.layer7.update();
     }
 }
 
 #[test]
 fn predict_test() {
-    let mut network = Network::new(2, 3, 2, 0.01);
+    let mut network = Network::new(2.0);
     //let result = network.predict(&NumpyVector::from_vec(&vec![0.0, 0.0]));
     //assert_eq!(result.data.len(), 2);
 }
 
 #[test]
 fn gradient_test() {
-    let network = Network::new(2, 3, 2, 0.01);
+    let network = Network::new(2.0);
     let x = NumpyVector::from_vec(&vec![1.0, 0.2]);
     let t = NumpyVector::from_vec(&vec![0.0, 1.0]);
 //    let result = network.gradient(&x, &t);

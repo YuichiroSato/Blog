@@ -58,6 +58,15 @@ impl NumpyArray {
         }
     }
 
+    pub fn zeros(&mut self) {
+        for r in 0..self.row {
+            for c in 0..self.column {
+                self.data[r][c] = 0.0;
+            }
+        }
+    }
+     
+
     pub fn flatten(&self) -> NumpyVector {
         let mut data = Vec::new();
         for r in 0..self.row {
@@ -187,6 +196,23 @@ pub fn sub(a1: &NumpyArray, a2: &NumpyArray) -> NumpyArray {
     arr
 }
 
+pub fn div(a1: &NumpyArray, a2: &NumpyArray) -> NumpyArray {
+    if a1.row != a2.row || a1.column != a2.column {
+        panic!("matrix dimension error: ({}, {}) / ({}, {}) is not defined", a1.row, a1.column, a2.row, a2.column);
+    }
+
+    let mut arr = NumpyArray::new(a1.row, a2.column);
+
+    for c in 0..a1.column {
+        for r in 0..a1.row {
+            arr.data[r][c] = a1.data[r][c] / a2.data[r][c];
+        }
+    }
+
+    arr
+}
+
+
 pub fn dot(a1: &NumpyArray, a2: &NumpyArray) -> NumpyArray {
     if a1.column != a2.row {
         panic!("matrix dimension error: ({}, {}) * ({}, {}) is not defined", a1.row, a1.column, a2.row, a2.column);
@@ -242,6 +268,12 @@ impl NumpyVector {
         NumpyArray::from_vec(&arr)
     }
 
+    pub fn zeros(&mut self) {
+      for i in 0..self.data.len() {
+        self.data[i] = 0.0;
+      }
+    }
+
     pub fn appendv(&mut self, v: &mut Vec<f32>) {
         self.data.append(v);
     }
@@ -264,6 +296,25 @@ impl NumpyVector {
       let mut x = NumpyVector::new(self.data.len());
       for i in 0..self.data.len() {
         x.data[i] = self.data[i] - a.data[i];
+      }
+      x
+    }
+
+    pub fn divv(&self, a: &NumpyVector) -> Self {
+      if self.data.len() != a.data.len() {
+        panic!("vector dimension error: [{}] / [{}] is not defined", self.data.len(), a.data.len());
+      }
+      let mut x = NumpyVector::new(self.data.len());
+      for i in 0..self.data.len() {
+        x.data[i] = self.data[i] / a.data[i];
+      }
+      x
+    }
+
+    pub fn adds(&self, v: f32) -> Self {
+      let mut x = NumpyVector::new(self.data.len());
+      for i in 0..self.data.len() {
+        x.data[i] = v + self.data[i];
       }
       x
     }
