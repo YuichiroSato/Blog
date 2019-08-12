@@ -65,7 +65,6 @@ impl NumpyArray {
             }
         }
     }
-     
 
     pub fn flatten(&self) -> NumpyVector {
         let mut data = Vec::new();
@@ -77,6 +76,23 @@ impl NumpyArray {
         NumpyVector {
             data: data
         }
+    }
+
+    pub fn divide_vertical(&self, column_size: usize) -> Vec<NumpyArray> {
+        let div_size = self.column / column_size;
+        let mut v: Vec<NumpyArray> = Vec::new();
+        for i in 0..div_size {
+            let mut arr = NumpyArray::new(self.row, column_size);
+            for r in 0..self.row {
+                let mut j = 0;
+                for c in (i * column_size)..((i + 1) * column_size) {
+                    arr.data[r][j] = self.data[r][c];
+                    j += 1;
+                }
+            }
+            v.push(arr);
+        }
+        v
     }
 
     pub fn transpose(&self) -> Self {
@@ -420,6 +436,14 @@ fn flatten_test() {
     let a = NumpyArray::from_vec(&vec![vec![1.0, 2.0, 3.0], vec![4.0, 5.0, 6.0]]);
     let result = a.flatten();
     assert_eq!(result.data, vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+}
+
+#[test]
+fn divide_vertical_test() {
+    let a = NumpyArray::from_vec(&vec![vec![1.0, 2.0, 3.0, 4.0], vec![5.0, 6.0, 7.0, 8.0]]);
+    let result = a.divide_vertical(2);
+    assert_eq!(result[0].data, vec![vec![1.0, 2.0], vec![5.0, 6.0]]);
+    assert_eq!(result[1].data, vec![vec![3.0, 4.0], vec![7.0, 8.0]]);
 }
 
 #[test]

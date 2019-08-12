@@ -283,8 +283,42 @@ impl Filter {
         let flat_x = Filter::flatten(&mut vec![x.clone()]);
         let dw = numpy::dot(&flat_x.to_row(), &self.col).to_vector();
         self.dw = dw.addv(&self.dw);
-        //TODO
-        vec![NumpyArray::new(self.input_row_size, self.input_column_size); self.channel]
+        Filter::col2im(self, &numpy::dot(&flat_x.to_column(), &self.w.to_row()))
+    }
+
+    pub fn col2im(&self, x: &NumpyArray) -> Vec<NumpyArray> {
+        let mut v: Vec<NumpyArray> = Vec::new();
+        let mutation = self.row_size * self.column_size;
+        let divide_to_each_channels = x.divide_vertical(mutation);
+        let tidle = self.input_row_size - self.row_size;
+
+        for i in 0..divide_to_each_channels.len() {
+            let mut arr = NumpyArray::new(self.input_row_size, self.input_column_size);
+            let divided = &divide_to_each_channels[i];
+            let mut base_row = 0;
+            let mut base_column = 0;
+            for j in 0..divided.row {
+                let mut k = 0;
+                for r in 0..self.row_size {
+                    for c in 0..self.column_size {
+                        //print!("{}", divided.data[j][k]);
+                        arr.data[base_row + r][base_column + c] += divided.data[j][k];
+                        k += 1;
+                    }
+                }
+                base_row += 1;
+                if base_row > tidle {
+                    base_row = 0;
+                    base_column += 1;
+                }
+                //println!();
+            }
+            //println!();
+            //println!();
+            v.push(arr);
+        }
+
+        v
     }
 
     pub fn update(&mut self) {
@@ -327,7 +361,20 @@ fn filter_im2col_test() {
     let i2 = NumpyArray::from_vec(&vec![vec![17.0, 18.0, 19.0, 20.0],vec![21.0, 22.0, 23.0, 24.0],vec![25.0,  26.0, 27.0, 28.0], vec![29.0, 30.0, 31.0, 32.0]]);
 
     let result = f.im2col(&vec![i1, i2]);
-    println!("{:?}", result.data);
+    //assert!(false);
+}
+
+#[test]
+fn filter_col2im_test() {
+    let a1 = NumpyArray::from_vec(&vec![vec![0.0, 0.0, 1.0],vec![0.0, 0.0, 1.0],vec![0.0, 0.0, 1.0]]);
+    let a2 = NumpyArray::from_vec(&vec![vec![1.0, 1.0, 1.0],vec![0.0, 0.0, 0.0],vec![0.0, 0.0, 0.0]]);
+    let f = Filter::new(&mut vec![a1, a2], 0, 1, 4, 4);
+
+    let i1 = NumpyArray::from_vec(&vec![vec![1.0, 2.0, 3.0, 4.0],vec![5.0, 6.0, 7.0, 8.0],vec![9.0,  10.0, 11.0, 12.0], vec![13.0, 14.0, 15.0, 16.0]]);
+    let i2 = NumpyArray::from_vec(&vec![vec![17.0, 18.0, 19.0, 20.0],vec![21.0, 22.0, 23.0, 24.0],vec![25.0,  26.0, 27.0, 28.0], vec![29.0, 30.0, 31.0, 32.0]]);
+
+    //let result = f.col2im(&vec![i1, i2]);
+    //println!("{:?}", result.data);
     //assert!(false);
 }
 
@@ -418,6 +465,7 @@ fn convolution_forward_test() {
 
     let mut l = ConvolutionLayer::new(1, vec![f1, f2], vec![0.0, -1.0], 0, 1, 4, 4);
     let result = l.forward(&vec![i1]);
+    println!("{}", result.len());
     println!("{:?}", result[0].data);
     println!("{:?}", result[1].data);
     //assert!(false);
@@ -439,10 +487,32 @@ fn convolution_backward_test() {
     let d1 = NumpyArray::from_vec(&vec![vec![1.0, 2.0], vec![3.0, 4.0]]);
     let d2 = NumpyArray::from_vec(&vec![vec![5.0, 6.0], vec![7.0, 8.0]]);
     l.backward(&vec![d1, d2]);
-    println!("{:?}", l.filters[0].w);
     l.update();
-    println!("{:?}", l.filters[0].w);
-    assert!(false);
+    //assert!(false);
+}
+
+#[test]
+fn convolution_backward_test2() {
+    let a1 = NumpyArray::from_vec(&vec![vec![0.0, 0.0, 1.0],vec![0.0, 0.0, 1.0],vec![0.0, 0.0, 1.0]]);
+    let a2 = NumpyArray::from_vec(&vec![vec![1.0, 1.0, 1.0],vec![0.0, 0.0, 0.0],vec![0.0, 0.0, 0.0]]);
+    let a3 = NumpyArray::from_vec(&vec![vec![0.0, 0.0, 0.0],vec![0.0, 0.0, 0.0],vec![0.0, 0.0, 1.0]]);
+    let a4 = NumpyArray::from_vec(&vec![vec![1.0, 0.0, 0.0],vec![0.0, 0.0, 0.0],vec![0.0, 0.0, 0.0]]);
+
+    let f1 = Filter::new(&mut vec![a1, a2], 0, 1, 4, 4);
+    let f2 = Filter::new(&mut vec![a3, a4], 0, 1, 4, 4);
+
+    let i1 = NumpyArray::from_vec(&vec![vec![1.0, 2.0, 3.0, 4.0],vec![5.0, 6.0, 7.0, 8.0],vec![9.0,  10.0, 11.0, 12.0], vec![13.0, 14.0, 15.0, 16.0]]);
+    let i2 = NumpyArray::from_vec(&vec![vec![1.0, 2.0, 3.0, 4.0],vec![5.0, 6.0, 7.0, 8.0],vec![9.0,  10.0, 11.0, 12.0], vec![13.0, 14.0, 15.0, 16.0]]);
+
+    let mut l = ConvolutionLayer::new(2, vec![f1, f2], vec![0.0, -1.0], 0, 1, 4, 4);
+    let _ = l.forward(&vec![i1, i2]);
+
+    let d1 = NumpyArray::from_vec(&vec![vec![1.0, 2.0], vec![3.0, 4.0]]);
+    let d2 = NumpyArray::from_vec(&vec![vec![5.0, 6.0], vec![7.0, 8.0]]);
+    let result = l.backward(&vec![d1, d2]);
+    println!("{:?}", result[0].data);
+    println!("{:?}", result[1].data);
+    //assert!(false);
 }
 
 pub struct CnnReluLayer {
