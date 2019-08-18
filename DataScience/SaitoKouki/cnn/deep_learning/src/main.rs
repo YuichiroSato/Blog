@@ -27,7 +27,7 @@ fn main() {
     let encoded_test_labels: Vec<NumpyVector> = test_labels.iter()
         .map(|&v| endode_train_vec(v))
         .collect();
-    let mut network = Network::new(0.01);
+    let mut network = Network::new();
 
     let mut r = rand::thread_rng();
 

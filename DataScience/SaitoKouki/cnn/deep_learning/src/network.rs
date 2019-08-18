@@ -3,6 +3,7 @@ use crate::layer;
 use crate::layer::*;
 use crate::numpy;
 use crate::numpy::*;
+use rand::distributions::{Normal, Distribution};
 use rand::prelude::*;
 
 pub struct Network {
@@ -21,12 +22,10 @@ pub struct Network {
 }
 
 impl Network {
-    pub fn new(weight_init_std: f32) -> Self {
-        let mut r = rand::thread_rng();
-
+    pub fn new() -> Self {
         let mut filters1 = Vec::new();
         for _ in 0..32 {
-            let w = NumpyArray::from_vec(&Network::gen_random_vec_vec(&mut r, 3, 3)).muls(2.0).adds(-1.0).muls(weight_init_std);
+            let w = NumpyArray::from_vec(&Network::gen_random_vec_vec(rand::thread_rng(), 3, 3, Network::weight(3, 3, 32)));
             filters1.push(Filter::new(&mut vec![w], 0, 1, 28, 28));
         }
 
@@ -34,7 +33,7 @@ impl Network {
         for _ in 0..64 {
             let mut fs = Vec::new();
             for _ in 0..32 {
-                let w = NumpyArray::from_vec(&Network::gen_random_vec_vec(&mut r, 4, 4)).muls(2.0).adds(-1.0).muls(weight_init_std);
+                let w = NumpyArray::from_vec(&Network::gen_random_vec_vec(rand::thread_rng(), 4, 4, Network::weight(4, 4, 64)));
                 fs.push(w);
             }
             filters2.push(Filter::new(&mut fs, 0, 1, 13, 13));
@@ -44,13 +43,13 @@ impl Network {
         for _ in 0..64 {
             let mut fs = Vec::new();
             for _ in 0..64 {
-                let w = NumpyArray::from_vec(&Network::gen_random_vec_vec(&mut r, 3, 3)).muls(2.0).adds(-1.0).muls(weight_init_std);
+                let w = NumpyArray::from_vec(&Network::gen_random_vec_vec(rand::thread_rng(), 3, 3, Network::weight(3, 3, 64)));
                 fs.push(w);
             }
             filters3.push(Filter::new(&mut fs, 0, 1, 5, 5));
         }
 
-        let w = NumpyArray::from_vec(&Network::gen_random_vec_vec(&mut r, 576, 10)).muls(2.0).adds(-1.0).muls(weight_init_std);
+        let w = NumpyArray::from_vec(&Network::gen_random_vec_vec(rand::thread_rng(), 576, 10, 1.0 / ((576.0 as f64).sqrt() as f64)));
         let b1 = vec![0.0; 32];
         let b2 = vec![0.0; 64];
         let b3 = vec![0.0; 64];
@@ -71,18 +70,23 @@ impl Network {
         }
     }
 
-    fn gen_random_vec(r: &mut ThreadRng, n: usize) -> Vec<f32> {
+    fn weight(width: usize, heigth: usize, depth: usize) -> f64 {
+        1.0 / ((width * heigth * depth) as f64).sqrt()
+    }
+
+    fn gen_random_vec(mut r: ThreadRng, n: usize, std: f64) -> Vec<f32> {
+        let normal = Normal::new(0.0, std);
         let mut v = Vec::new();
         for _ in 0..n {
-            v.push(r.gen());
+            v.push(normal.sample(&mut r) as f32);
         }
         v
     }
 
-    fn gen_random_vec_vec(r: &mut ThreadRng, n: usize, m: usize) -> Vec<Vec<f32>> {
+    fn gen_random_vec_vec(mut r: ThreadRng, n: usize, m: usize, std: f64) -> Vec<Vec<f32>> {
         let mut v = Vec::new();
         for _ in 0..n {
-            v.push(Network::gen_random_vec(r, m));
+            v.push(Network::gen_random_vec(rand::thread_rng(), m, std));
         }
         v
     }
