@@ -301,7 +301,6 @@ impl Filter {
                 let mut k = 0;
                 for r in 0..self.row_size {
                     for c in 0..self.column_size {
-                        //print!("{}", divided.data[j][k]);
                         arr.data[base_row + r][base_column + c] += divided.data[j][k];
                         k += 1;
                     }
@@ -311,10 +310,7 @@ impl Filter {
                     base_row = 0;
                     base_column += 1;
                 }
-                //println!();
             }
-            //println!();
-            //println!();
             v.push(arr);
         }
 
@@ -333,8 +329,9 @@ fn filter_flatten_test() {
     let a2 = NumpyArray::from_vec(&vec![vec![1.0, 1.0, 1.0],vec![0.0, 0.0, 0.0],vec![0.0, 0.0, 0.0]]);
 
     let result = Filter::flatten(&mut vec![a1, a2]);
-    println!("{:?}", result.data);
-    //assert!(false);
+    let expected = vec![0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+
+    assert!(result.data == expected);
 }
 
 #[test]
@@ -370,12 +367,36 @@ fn filter_col2im_test() {
     let a2 = NumpyArray::from_vec(&vec![vec![1.0, 1.0, 1.0],vec![0.0, 0.0, 0.0],vec![0.0, 0.0, 0.0]]);
     let f = Filter::new(&mut vec![a1, a2], 0, 1, 4, 4);
 
+    let i1 = NumpyArray::from_vec(&vec![vec![1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], vec![1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], vec![1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], vec![1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]);
+
+    let result = f.col2im(&i1);
+
+    let expected = vec![vec![1.0, 2.0, 2.0, 1.0], vec![2.0, 4.0, 4.0, 2.0], vec![2.0, 4.0, 4.0, 2.0], vec![1.0, 2.0, 2.0, 1.0]];
+
+    assert!(result[0].data == expected);
+    assert!(result[1].data == expected);
+}
+
+#[test]
+fn filter_backword_test() {
+    let a1 = NumpyArray::from_vec(&vec![vec![0.0, 0.0, 1.0],vec![0.0, 0.0, 1.0],vec![0.0, 0.0, 1.0]]);
+    let a2 = NumpyArray::from_vec(&vec![vec![1.0, 1.0, 1.0],vec![0.0, 0.0, 0.0],vec![0.0, 0.0, 0.0]]);
+
+    let mut f = Filter::new(&mut vec![a1, a2], 0, 1, 4, 4);
     let i1 = NumpyArray::from_vec(&vec![vec![1.0, 2.0, 3.0, 4.0],vec![5.0, 6.0, 7.0, 8.0],vec![9.0,  10.0, 11.0, 12.0], vec![13.0, 14.0, 15.0, 16.0]]);
     let i2 = NumpyArray::from_vec(&vec![vec![17.0, 18.0, 19.0, 20.0],vec![21.0, 22.0, 23.0, 24.0],vec![25.0,  26.0, 27.0, 28.0], vec![29.0, 30.0, 31.0, 32.0]]);
 
-    //let result = f.col2im(&vec![i1, i2]);
-    //println!("{:?}", result.data);
-    //assert!(false);
+    f.forward(&vec![i1, i2]);
+
+    let d1 = NumpyArray::from_vec(&vec![vec![1.0], vec![1.0], vec![1.0], vec![1.0]]);
+
+    let result = f.backward(&d1);
+
+    let expected0 = vec![vec![0.0, 0.0, 1.0, 1.0], vec![0.0, 0.0, 2.0, 2.0], vec![0.0, 0.0, 2.0, 2.0], vec![0.0, 0.0, 1.0, 1.0]];
+    let expected1 = vec![vec![1.0, 2.0, 2.0, 1.0], vec![1.0, 2.0, 2.0, 1.0], vec![0.0, 0.0, 0.0, 0.0], vec![0.0, 0.0, 0.0, 0.0]];
+
+    assert!(result[0].data == expected0);
+    assert!(result[1].data == expected1);
 }
 
 pub struct ConvolutionLayer {
