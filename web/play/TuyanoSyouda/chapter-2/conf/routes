@@ -1,0 +1,14 @@
+GET / controllers.HomeController.index
+GET /todo controllers.HomeController.todo
+GET /result controllers.HomeController.result
+GET /html controllers.HomeController.html
+GET /xml controllers.HomeController.xml
+GET /json controllers.HomeController.json
+GET /withHeader controllers.HomeController.withHeader
+GET /id/:id controllers.HomeController.id(id:Int)
+GET /idname/:id+:name controllers.HomeController.name(id:Int, name:String)
+GET /option/:id controllers.HomeController.option(id:Int, name:Option[String])
+GET /setCookie controllers.HomeController.setCookie(name:Option[String])
+GET /setSession controllers.HomeController.setSession(name:Option[String])
+
+GET /assets/*file controllers.Assets.versioned(path="/public", file: Asset)
