@@ -81,7 +81,7 @@ class HomeController @Inject()(cc: ControllerComponents) extends AbstractControl
       case Some(str) =>
         val session = request.session.get("name")
         Ok("<p>name send.</p>" +
-          s"<p>cookie: ${session.getOrElse("no-name")}")
+          s"<p>session: ${session.getOrElse("no-name")}")
           .withSession(request.session + ("name" -> str))
       case None => Ok("<p>no name.</p>")
     }).as("text/html")
