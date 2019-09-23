@@ -1,0 +1,9 @@
+@(message: String, p: Int)
+@main("Index Page", "Hello", "copyright 2018,") {
+    <p>@message</p>
+    @if(p % 2 == 0) {
+        <p>@p は。偶数です。</p>
+    } else {
+        <p>@p は。奇数です。</p>
+    }
+}

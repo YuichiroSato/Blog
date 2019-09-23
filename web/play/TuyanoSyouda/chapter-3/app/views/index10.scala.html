@@ -1,0 +1,24 @@
+@(message: String, arr: List[String])
+
+@makeList(arr: List[String], numbering: Boolean) = {
+    @if(numbering) {
+        <ol>
+    } else {
+        <ul>
+    }
+    @for(item <- arr) {
+        <li>@item</li>
+    }
+    @if(numbering) {
+        </ol>
+    } else {
+        </ul>
+    }
+}
+
+@main("Index Page", "Hello", "copyright 2018,") {
+    <p>@message</p>
+    @makeList(arr, true)
+    <hr>
+    @makeList(arr, false)
+}

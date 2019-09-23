@@ -1,0 +1,17 @@
+GET / controllers.HomeController.index
+GET /index2 controllers.HomeController.index2
+GET /index3 controllers.HomeController.index3
+GET /index4 controllers.HomeController.index4
+GET /index5 controllers.HomeController.index5
+GET /index6 controllers.HomeController.index6
+GET /index7 controllers.HomeController.index7(p: Option[Int])
+GET /index8 controllers.HomeController.index8
+GET /index9 controllers.HomeController.index9
+GET /index10 controllers.HomeController.index10
+GET /index11 controllers.HomeController.index11
+GET /form controllers.HomeController.form
+POST /form2 controllers.HomeController.form2
+GET /form3 controllers.FormController.index
+POST /form4 controllers.FormController.form
+
+GET /assets/*file controllers.Assets.versioned(path="/public", file: Asset)

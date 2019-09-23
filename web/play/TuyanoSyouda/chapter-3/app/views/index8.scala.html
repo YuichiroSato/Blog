@@ -1,0 +1,9 @@
+@(message: String, arr: List[String])
+@main("Index Page", "Hello", "copyright 2018,") {
+    <p>@message</p>
+    <ol>
+    @for(item <- arr) {
+        <li>@item</li>
+    }
+    </ol>
+}

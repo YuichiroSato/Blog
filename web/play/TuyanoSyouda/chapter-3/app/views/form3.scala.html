@@ -1,0 +1,13 @@
+@(message: String, myform: Form[MyForm.Data])(implicit request: MessagesRequestHeader)
+
+@main("Index Page", "Hello", "copyright 2018.") {
+<p>@message</p>
+@helper.form(action=routes.FormController.form) {
+@helper.CSRF.formField
+@helper.inputText(myform("name"))
+@helper.inputPassword(myform("password"))
+@helper.inputRadioGroup(myform("radio"),
+options=Seq("ウィンドウズ" -> "Windows", "マック" -> "macOS", "リナックス" -> "Linux"))
+<button>send form</button>
+}
+}
