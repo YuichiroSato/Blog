@@ -1,0 +1,10 @@
+GET / controllers.HomeController.index
+GET /show/:id controllers.HomeController.show(id:Int)
+GET /add controllers.HomeController.add
+POST /create controllers.HomeController.create
+GET /edit/:id controllers.HomeController.edit(id:Int)
+POST /update/:id controllers.HomeController.update(id:Int)
+GET /delete/:id controllers.HomeController.delete(id:Int)
+POST /remove/:id controllers.HomeController.remove(id:Int)
+
+GET /assets/*file controllers.Assets.versioned(path="/public", file: Asset)

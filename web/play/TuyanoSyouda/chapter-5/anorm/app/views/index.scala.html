@@ -1,0 +1,10 @@
+@(message: String, result: List[PersonForm.PersonData])
+
+@main("Index Page", "Hello", "copyright 2018.") {
+    <p>@Html(message)</p>
+<ul>
+    @for(item <- result) {
+        <li>@item.name: @item.mail (@item.tel)</li>
+    }
+</ul>
+}
