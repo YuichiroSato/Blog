@@ -1,0 +1,10 @@
+@(message: String, data: Seq[models.Person])(implicit request: MessagesRequestHeader, flash: Flash)
+
+@main("Index Page", "Hello", "copyright 2018.") {
+    <p>@flash.get("success").getOrElse(message)</p>
+    <ul>
+    @for(item <- data) {
+        <li>@item.name: @item.mail (@item.tel)</li>
+    }
+    </ul>
+}

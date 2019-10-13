@@ -1,0 +1,17 @@
+@(message: String, form: Form[MessageForm], data: Seq[MessageWithPerson])(implicit request: MessagesRequestHeader, flash: Flash)
+
+@main("Messages", "MSG", "copyright 2018.") {
+    <p>@flash.get("success").getOrElse(message)</p>
+    @helper.form(action=routes.HomeController.addMessage()) {
+        @helper.CSRF.formField
+        @helper.inputText(form("personId"))
+        @helper.inputText(form("message"))
+        <button>Add Message</button>
+    }
+    <hr>
+    <ul>
+        @for(item <- data) {
+            <li>@item</li>
+        }
+    </ul>
+}

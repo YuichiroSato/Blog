@@ -1,0 +1,12 @@
+@(message: String, form: Form[models.PersonForm], id: Int)(implicit request: MessagesRequestHeader)
+
+@main("Edit Person", "Edit", "copyright 2018.") {
+    <p>@Html(message)</p>
+    @helper.form(action=routes.HomeController.update(id)) {
+        @helper.CSRF.formField
+        @helper.inputText(form("name"))
+        @helper.inputText(form("mail"))
+        @helper.inputText(form("tel"))
+        <button>Update Person</button>
+    }
+}
