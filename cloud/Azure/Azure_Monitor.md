@@ -76,6 +76,17 @@ https://learn.microsoft.com/ja-jp/azure/azure-monitor/containers/container-insig
 問４　Container insightsで監視できるシステムパフォーマンスの性質について説明できる？  
 問５　Container insightsで作成できるアラートについて説明できる？
 
+## Azure Monitor Network Insights
+https://learn.microsoft.com/ja-jp/azure/network-watcher/network-insights-overview
+
+問１　Azure Monitor Network Insightsの役割を説明できる？  
+問２　トポロジの役割を説明できる？  
+問３　概要ページで見られる情報を説明できる？  
+問４　リソースビューで見れるAzureリソースは何？  
+問５　接続ダブで見られる情報を説明できる？  
+問６　トラフィックタブで見られる情報を説明できる？  
+問７　診断ツールキットで見られる情報を説明できる？
+
 ## 分散トレースとは
 https://learn.microsoft.com/ja-jp/azure/azure-monitor/app/distributed-tracing
 
