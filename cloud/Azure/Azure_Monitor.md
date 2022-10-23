@@ -94,3 +94,12 @@ https://learn.microsoft.com/ja-jp/azure/azure-monitor/app/distributed-tracing
 問２　OpenTelemetryを利用した分散トレースの有効化を説明できる？  
 問３　OpenCensusを利用した分散トレースの有効化を説明できる？
 
+## Azure Monitor アクティビティ ログ
+https://learn.microsoft.com/ja-jp/azure/azure-monitor/essentials/activity-log?tabs=powershell
+
+問１　Azure Monitorアクティビティログで見られるログについて説明できる？  
+問２　アクティビティログをLog Analyticsに送信する方法は分かる？  
+問３　アクティビティログをAzure Event Hubsに送信して実現できることは分かる？  
+問４　アクティビティログをAzure Storageに送信することで実現できることは分かる？  
+問５　アクティビティログの分析情報を見る方法わ分かる？
+
